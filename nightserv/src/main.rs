@@ -474,7 +474,7 @@ async fn main() -> std::io::Result<()> {
 	}));
 
 	let s1 = state.clone();
-	let routes = warp::path("sock")
+	let sock_route = warp::path("sock")
 		.and(warp::ws())
 		.map(move |ws: warp::ws::Ws| {
 
@@ -546,6 +546,10 @@ async fn main() -> std::io::Result<()> {
 	});
 
 	tokio::spawn(round_task(state.clone()));
+
+	let routes = warp::fs::dir("../client/dist")
+		.or(warp::path("doorbell").and(warp::fs::file("../client/dist/doorbell.html")))
+		.or(sock_route);
 
 	join!(run_bot(state.clone()), warp::serve(routes).run(([127, 0, 0, 1], env_num("PORT", 3030) as u16)));
 
