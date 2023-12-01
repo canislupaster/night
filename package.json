@@ -1,8 +1,0 @@
-{
-  "dependencies": {
-    "@purduehackers/time": "^0.6.12"
-  },
-  "devDependencies": {
-    "tailwindcss": "^3.3.5"
-  }
-}
