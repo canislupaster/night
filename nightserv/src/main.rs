@@ -103,6 +103,7 @@ impl ConnState {
 struct State {
 	recent_msgs: VecDeque<Post>,
 	max_rec_msg: usize,
+	max_player: usize,
 	ring_delay: Duration,
 	round_timer: Duration,
 
@@ -146,6 +147,11 @@ impl State {
 	}
 
 	async fn register(&mut self, id: usize, mut name: String, color: String) -> Result<()> {
+		if self.conns.iter().filter(|(id,st)| st.player.is_some())
+			.count() >= self.max_player {
+			return Err(anyhow!("there are too many players at the moment. check back later, i guess?"));
+		}
+
 		let c = COLORS.into_iter().find(|c| c==&color).ok_or(anyhow!("bad color chosen"))?;
 
 		if name.len() == 0 || name.len()>MAX_NAMELEN {
@@ -414,7 +420,6 @@ async fn round_task(state: Arc<Mutex<State>>) -> ! {
 			}
 		}
 
-
 		let changes_vec = changes.into_iter()
 			.map(|((y,x), id)| GridChange { x,y,by: Some(id) }).collect::<Vec<GridChange>>();
 
@@ -455,6 +460,7 @@ async fn main() -> std::io::Result<()> {
 	let state = Arc::new(Mutex::new(State {
 		recent_msgs: VecDeque::new(),
 		max_rec_msg: env_num("MAX_RECENT_POSTS", 10),
+		max_player: env_num("MAX_PLAYER", 30),
 		ring_delay: Duration::from_secs(ring_delay as u64),
 		round_timer: Duration::from_millis(round_timer as u64),
 		round_moves: HashMap::new(),
@@ -468,7 +474,10 @@ async fn main() -> std::io::Result<()> {
 	}));
 
 	let s1 = state.clone();
-	let routes = warp::path("sock").and(warp::ws()).map(move |ws: warp::ws::Ws| {
+	let routes = warp::path("sock")
+		.and(warp::ws())
+		.map(move |ws: warp::ws::Ws| {
+
 		let s2 = s1.clone(); // ugh
 		ws.on_upgrade(move |sock| async move {
 			let (tx, mut rx) = sock.split();
@@ -538,7 +547,7 @@ async fn main() -> std::io::Result<()> {
 
 	tokio::spawn(round_task(state.clone()));
 
-	join!(run_bot(state.clone()), warp::serve(routes).run(([127, 0, 0, 1], 3030)));
+	join!(run_bot(state.clone()), warp::serve(routes).run(([127, 0, 0, 1], env_num("PORT", 3030) as u16)));
 
 	Ok(())
 }

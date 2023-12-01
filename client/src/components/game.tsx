@@ -58,9 +58,9 @@ export function Game() {
       <h4 className="text-2xl mt-3" >Rules</h4>
       <ul className="text-xs" >
         <li>Each round, select a single cell to paint.</li>
-        <li>If multiple players select the same cell, the painter is chosen randomly.</li>
-        <li>If the cell is already painted, the cell is overwritten with probability 1/2.</li>
-        <li>If a closed curve of the each color are filled in random order.</li>
+        <li>If multiple players select the same cell, who gets it is chosen randomly.</li>
+        <li>If the cell is already painted, each player only has a half chance of overwriting it.</li>
+        <li>Closed curves drawn by the same player are filled in random order.</li>
         <li className="text-bold" >You win if you color all the cells.</li>
       </ul>
     </div>
