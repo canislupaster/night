@@ -76,10 +76,12 @@ enum ServerMsg<'a> {
 	Leave {id: usize},
 	#[serde(rename_all = "camelCase")]
 	BellRung {next_ringable: usize},
+	StopRinging,
 	Posted {post: &'a Post},
 	#[serde(rename_all = "camelCase")]
 	Init {
 		id: usize,
+		ringing: bool,
 		next_ringable: usize,
 		fish: &'a str,
 		players: Vec<ClientPlayer<'a>>,
@@ -115,6 +117,7 @@ struct State {
 	default_grid: Box<[Box<[Cell]>]>,
 	grid: Box<[Box<[Cell]>]>,
 	last_rung: Option<Instant>,
+	ringing: bool,
 	fish: String
 }
 
@@ -178,10 +181,29 @@ impl State {
 		}
 	}
 
-	async fn ring(&mut self) -> Result<()> {
-		if self.ringable() {
-			self.last_rung = Some(Instant::now());
-			self.broadcast(&ServerMsg::BellRung { next_ringable: self.ring_delay.as_millis() as usize }).await;
+	async fn ring(&mut self, state: Arc<Mutex<State>>) -> Result<()> {
+		if self.ringing {
+			self.ringing=false;
+			self.broadcast(&ServerMsg::StopRinging).await;
+		} else if self.ringable() {
+			let lr = Instant::now();
+			let d = self.ring_delay;
+
+			self.last_rung = Some(lr);
+			self.ringing = true;
+			self.broadcast(&ServerMsg::BellRung {
+				next_ringable: self.ring_delay.as_millis() as usize
+			}).await;
+
+			tokio::spawn(async move {
+				tokio::time::sleep(d).await;
+
+				let mut lock = state.lock().await;
+				if lock.ringing && lock.last_rung==Some(lr) {
+					lock.ringing=false;
+					lock.broadcast(&ServerMsg::StopRinging).await;
+				}
+			});
 		}
 
 		Ok::<(),anyhow::Error>(())
@@ -450,7 +472,7 @@ async fn main() -> std::io::Result<()> {
 
 	let env_num = |name, default| std::env::var(name).ok().and_then(|x| x.parse::<usize>().ok()).unwrap_or(default);
 	let grid_n = env_num("GRID_SIZE", 30);
-	let ring_delay = env_num("RING_DELAY", 60);
+	let ring_delay = env_num("RING_DELAY", 20);
 	let round_timer = env_num("ROUND_TIMER", 100);
 	
 	let dgrid = vec![
@@ -469,6 +491,7 @@ async fn main() -> std::io::Result<()> {
 		num_conn: 0, conns: HashMap::new(),
 		last_rung: None,
 		grid_n,
+		ringing: false,
 		default_grid: dgrid.clone(),
 		grid: dgrid
 	}));
@@ -501,6 +524,7 @@ async fn main() -> std::io::Result<()> {
 					recent_msgs: &lock.recent_msgs,
 					grid: &lock.grid,
 					fish: &lock.fish,
+					ringing: lock.ringing,
 					players: lock.client_players()
 				}).await;
 
@@ -518,7 +542,7 @@ async fn main() -> std::io::Result<()> {
 						let mut lock = s2.lock().await;
 						match m {
 							ClientMsg::Paint {x, y} => lock.paint((x,y), id).await?,
-							ClientMsg::RingBell => lock.ring().await?,
+							ClientMsg::RingBell => lock.ring(s2.clone()).await?,
 							ClientMsg::Register { name, color } => lock.register(id, name, color).await?
 						}
 						

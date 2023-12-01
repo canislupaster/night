@@ -12,12 +12,13 @@ export function DoorbellButton({data: ctx}: {data: ServerContextData}) {
   };
 
   let isErr = (ctx.state=="connected" && ctx.data.error!==undefined) || ctx.state=="error";
+  let clickable = ctx.state == "connected" && (ctx.data.ringable || ctx.data.ringing);
 
   let buttonLabel = ctx.state=="connecting" ? 'Wiring up…'
     : ctx.state=="connected"
     ? ctx.data.ringing
       ? 'Ringing…'
-      : 'Ring the doorbell'
+      : (ctx.data.ringable ? 'Ring the doorbell' : 'Wait a few secs...')
     : 'Bzzt! Error.'
 
   return (
@@ -26,7 +27,7 @@ export function DoorbellButton({data: ctx}: {data: ServerContextData}) {
         className="bg-pink-500 aspect-square rounded-full [width:10ch] [border-bottom-width:12px] border-pink-600 active:border-b-4 p-6 font-bold text-4xl shadow-xl [text-shadow:-1px_-1px_#00000052] relative z-10"
         aria-pressed={ctx.state=="connected" && ctx.data.ringing}
         onClick={ringTheBell}
-        disabled={ctx.state!="connected"}
+        disabled={!clickable}
       >
         {buttonLabel}
       </button>

@@ -34,8 +34,9 @@ export type ServerMsg =
   | {type: "join", player: Player}
   | {type: "leave", id: number}
   | {type: "bellRung", nextRingable: number}
+  | {type: "stopRinging"}
   | {type: "posted", post: RawPost & {time: string}}
-  | {type: "init", nextRingable: number, fish: string, recentMsgs: Post[], grid: Cell[][], players: Player[], id: number}
+  | {type: "init", nextRingable: number, ringing: boolean, fish: string, recentMsgs: Post[], grid: Cell[][], players: Player[], id: number}
   | {type: "err", msg: string};
 
 export type ServerEvent = "roundOver" | "bellRung";
@@ -50,11 +51,24 @@ export type ServerConnectedCtx = {
   send: (msg: ClientMsg) => void,
   on: (evt: ServerEvent, cb: () => void) => void,
   removeListener: (evt: ServerEvent, cb: () => void) => void,
-  ringing: boolean
+  ringing: boolean,
+  ringable: boolean
 }
 
 export function defaultConnectedCtx(): ServerConnectedCtx {
-  return {grid: [], nextRingable: new Date(), recentMsgs: [], players: {}, fish: "", error: "Not connected. What the hell!", send: (msg) => {}, ringing: false, on: (e,c) => {}, removeListener: (evt, cb) => {}};
+  return {
+    grid: [],
+    nextRingable: new Date(),
+    recentMsgs: [],
+    players: {},
+    fish: "",
+    error: "Not connected. What the hell!",
+    send: (msg) => {},
+    ringing: false,
+    ringable: false,
+    on: (e,c) => {},
+    removeListener: (evt, cb) => {}
+  };
 }
 
 export type ServerContextData =
@@ -130,15 +144,20 @@ export function connect(setCtx: (f: (x: ServerContextData) => ServerContextData)
             return nd;
           })
         };
+
+        let timeoutRingable = (d) =>
+          timeouts.push(setTimeout(() => {
+            setData((x) => ({...x, ringable: true}));
+          }, d));
         
         switch (msg.type) {
+          case "stopRinging":
+            setData((x) => ({...x, ringing: false}));
+            break;
           case "bellRung":
-            setData((x) => ({...x, nextRingable: new Date(Date.now() + msg.nextRingable), ringing: true}));
+            setData((x) => ({...x, nextRingable: new Date(Date.now() + msg.nextRingable), ringable: false, ringing: true}));
 
-            timeouts.push(setTimeout(() => {
-              setData((x) => ({...x, ringing: false}));
-            }, msg.nextRingable));
-
+            timeoutRingable(msg.nextRingable);
             for (let cb of listeners["bellRung"]) cb();
 
             break;
@@ -164,10 +183,11 @@ export function connect(setCtx: (f: (x: ServerContextData) => ServerContextData)
                 removeListener: (evt, cb) => {
                   listeners[evt].delete(cb);
                 },
-                ringing: msg.nextRingable > 0
+                ringable: msg.nextRingable==0
               }
             };});
 
+            timeoutRingable(msg.nextRingable);
             break;
           case "roundOver":
             setData((x) => {
