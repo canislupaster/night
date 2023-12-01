@@ -107,6 +107,7 @@ struct State {
 	max_rec_msg: usize,
 	max_player: usize,
 	ring_delay: Duration,
+	stop_ringing: Duration,
 	round_timer: Duration,
 
 	round_moves: HashMap<usize, (usize, usize)>,
@@ -187,7 +188,7 @@ impl State {
 			self.broadcast(&ServerMsg::StopRinging).await;
 		} else if self.ringable() {
 			let lr = Instant::now();
-			let d = self.ring_delay;
+			let d = self.stop_ringing;
 
 			self.last_rung = Some(lr);
 			self.ringing = true;
@@ -472,8 +473,6 @@ async fn main() -> std::io::Result<()> {
 
 	let env_num = |name, default| std::env::var(name).ok().and_then(|x| x.parse::<usize>().ok()).unwrap_or(default);
 	let grid_n = env_num("GRID_SIZE", 30);
-	let ring_delay = env_num("RING_DELAY", 20);
-	let round_timer = env_num("ROUND_TIMER", 100);
 	
 	let dgrid = vec![
 		vec![None; grid_n].into_boxed_slice(); grid_n
@@ -483,8 +482,9 @@ async fn main() -> std::io::Result<()> {
 		recent_msgs: VecDeque::new(),
 		max_rec_msg: env_num("MAX_RECENT_POSTS", 10),
 		max_player: env_num("MAX_PLAYER", 30),
-		ring_delay: Duration::from_secs(ring_delay as u64),
-		round_timer: Duration::from_millis(round_timer as u64),
+		ring_delay: Duration::from_secs(env_num("RING_DELAY", 5) as u64),
+		stop_ringing: Duration::from_secs(env_num("STOP_RINGING", 30) as u64),
+		round_timer: Duration::from_millis(env_num("ROUND_TIMER", 100) as u64),
 		round_moves: HashMap::new(),
 		fish: std::env::var("FISH").expect("no fish"),
 

@@ -45,7 +45,7 @@ export function Game() {
         {grid}
       </div>
 
-      <div className="bg-gray-300 self-stretch border-0 rounded w-0.5 mx-4" ></div>
+      {psorted.length>0 ? <div className="bg-gray-300 self-stretch border-0 rounded w-0.5 mx-4" ></div> : <></>}
 
       <div className="flex flex-wrap flex-col" >
         {leaderboard}
