@@ -134,3 +134,11 @@ function App() {
 }
 
 render(<App />, document.getElementById('app')!)
+
+let cb = () => {
+  let b = document.getElementById("bell") as HTMLAudioElement;
+  b.play(); b.pause();
+};
+
+document.addEventListener("touchstart", cb);
+document.addEventListener("click", cb);
