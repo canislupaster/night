@@ -42,18 +42,18 @@ export function DoorbellButton({data: ctx}: {data: ServerContextData}) {
 }
 
 export function DoorbellCard() {
-  const sound = useRef<HTMLAudioElement>(new Audio(doorbellSound));
+  const sound = useRef<HTMLAudioElement|undefined>(undefined);
 
   let ctx = useServer();
 
   useEffect(() => {
-    if (ctx.ringing && sound.current.paused) {
+    if (sound.current!==undefined && sound.current.paused && ctx.ringing)
       sound.current.play();
-    }
   }, [ctx.ringing]);
 
   return (
     <div className="z-10 text-center fixed bottom-10 m-auto left-0 right-0" >
+      <audio src={doorbellSound} ref={sound} />
       {ctx.ringing && (<button disabled className="bg-pink-500 text-white rounded-lg shadow-2xl text-4xl font-bold animate-bounce p-4 my-4">
         <div className="animate-pulse absolute inset-0 w-full h-full bg-pink-500 opacity-30 pointer-events-none"></div>
         Someone’s at the door!
