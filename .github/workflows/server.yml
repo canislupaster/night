@@ -16,7 +16,18 @@ jobs:
     steps:
     - uses: actions/checkout@v3
       with:
-        sparse-checkout: "nightserv/"
+        sparse-checkout: |
+          nightserv/
+          .github/
+    - name: Test connection
+      uses: ./.github/runssh
+      with:
+        private_key: ${{ secrets.SSH_PRIVATE_KEY }}
+        host: ${{ secrets.SSH_HOST }}
+        user: ${{ secrets.SSH_USER }}
+        cmd: |
+          echo "hi"
+          touch ~/test.txt
     - name: Cache
       uses: actions/cache@v3.3.2
       with:
