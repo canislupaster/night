@@ -27,9 +27,9 @@ jobs:
           ~/.cargo/registry/index/
           ~/.cargo/registry/cache/
           ~/.cargo/git/db/
-          nightserv/target/
+          ./nightserv/target/
         # An explicit key for restoring and saving the cache
-        key: ${{ runner.os }}-${{ hashFiles('nightserv/Cargo.lock') }}-cache
+        key: ${{ runner.os }}-${{ hashFiles("./nightserv/Cargo.lock") }}-cache
     - name: Build
       run: |
         cd nightserv
