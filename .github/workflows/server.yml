@@ -4,6 +4,7 @@ on:
   push:
     branches: [ "main" ]
     paths: ["nightserv/**"]
+  workflow_dispatch:
 
 env:
   CARGO_TERM_COLOR: always
