@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use anyhow::{Result, anyhow};
 use warp::Filter;
 
-use serenity::{async_trait, model::id::ChannelId};
+use serenity::{async_trait, model::id::{ChannelId, GuildId}};
 use serenity::model::channel::Message;
 use serenity::prelude::*;
 
@@ -216,32 +216,52 @@ struct Handler {
 	channel_id: ChannelId
 }
 
+fn msg_images(msg: &Message) -> impl Iterator<Item=&'_ String> {
+	msg.attachments.iter()
+		.filter(|a| match &a.content_type {
+			Some (t) if t.starts_with("image/") => true, _ => false
+		})
+		.map(|a| &a.url)
+}
+
+async fn msg_to_post(msg: Message, ctx: Context) -> Post {
+	Post {
+		images: msg_images(&msg).map(|s| s.to_owned()).collect(),
+		content: msg.content_safe(&ctx),
+		username: msg.author_nick(&ctx).await
+			.unwrap_or_else(|| msg.author.name.to_owned()),
+		avatar: msg.author.avatar_url().unwrap_or_else(|| msg.author.default_avatar_url()),
+		time: msg.timestamp.to_rfc3339()
+	}
+}
+
 #[async_trait]
 impl EventHandler for Handler {
+	async fn cache_ready(&self, ctx: Context, guilds: Vec<GuildId>) {
+		let mut lock = self.state.lock().await;
+		let msgs = self.channel_id.messages(&ctx, |m|
+			m.limit(lock.max_rec_msg as u64)).await.expect("could not get messages");
+		let posts = join_all(msgs.into_iter().map(|m| msg_to_post(m, ctx.clone()))).await;
+		lock.recent_msgs = VecDeque::from(posts);
+	}
+
 	async fn message(&self, ctx: Context, msg: Message) {
 		if msg.channel_id!=self.channel_id { return; }
 
 		let mut lock = self.state.lock().await;
-		let content = msg.content_safe(&ctx);
 
-		let dm = Post {
-			images: msg.attachments.iter()
-				.filter(|a| match &a.content_type {
-					Some (t) if t.starts_with("image/") => true, _ => false
-				})
-				.map(|a| a.url.to_owned()).collect(),
-			content,
-			username: msg.author_nick(&ctx).await
-				.unwrap_or_else(|| msg.author.name.to_owned()),
-			avatar: msg.author.avatar_url().unwrap_or_else(|| msg.author.default_avatar_url()),
-			time: msg.timestamp.to_rfc3339()
-		};
+		if msg.content.trim().to_lowercase()=="fish of the day" {
+			if let Some(attach) = msg_images(&msg).next() {
+				lock.fish = attach.to_owned();
+			}
+		} else {
+			let p = msg_to_post(msg, ctx.clone()).await;
+			lock.broadcast(&ServerMsg::Posted {post: &p}).await;
+			lock.recent_msgs.push_back(p);
 
-		lock.broadcast(&ServerMsg::Posted {post: &dm}).await;
-		lock.recent_msgs.push_back(dm);
-
-		if lock.recent_msgs.len() > lock.max_rec_msg {
-			lock.recent_msgs.pop_front();
+			if lock.recent_msgs.len() > lock.max_rec_msg {
+				lock.recent_msgs.pop_front();
+			}
 		}
 	}
 }
