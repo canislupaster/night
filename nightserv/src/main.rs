@@ -7,9 +7,9 @@ use serde::{Deserialize, Serialize};
 use anyhow::{Result, anyhow};
 use warp::Filter;
 
-use serenity::{async_trait, model::id::{ChannelId, GuildId}};
-use serenity::model::channel::Message;
+use serenity::async_trait;
 use serenity::prelude::*;
+use serenity::model::prelude::*;
 
 use rand::{seq::SliceRandom, distributions::{Distribution,Bernoulli}, SeedableRng};
 
@@ -237,7 +237,7 @@ async fn msg_to_post(msg: Message, ctx: Context) -> Post {
 
 #[async_trait]
 impl EventHandler for Handler {
-	async fn cache_ready(&self, ctx: Context, guilds: Vec<GuildId>) {
+	async fn ready(&self, ctx: Context, rdy: Ready) {
 		let mut lock = self.state.lock().await;
 		let msgs = self.channel_id.messages(&ctx, |m|
 			m.limit(lock.max_rec_msg as u64)).await.expect("could not get messages");
