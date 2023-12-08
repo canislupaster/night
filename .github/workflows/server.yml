@@ -19,26 +19,6 @@ jobs:
         sparse-checkout: |
           nightserv/
           .github/
-    - name: Deploy (quit server)
-      uses: ./.github/runssh
-      with:
-        private_key: ${{ secrets.SSH_PRIVATE_KEY }}
-        host: ${{ secrets.SSH_HOST }}
-        user: ${{ secrets.SSH_USER }}
-        cmd: |
-          cd ${{ secrets.SSH_PATH }}/nightserv
-          mkdir -p ./target/release
-          screen -S hacknight -X quit || true
-          rm ./target/release/nightserv || true
-    - name: Deploy (start server)
-      uses: ./.github/runssh
-      with:
-        private_key: ${{ secrets.SSH_PRIVATE_KEY }}
-        host: ${{ secrets.SSH_HOST }}
-        user: ${{ secrets.SSH_USER }}
-        file: README.md
-        dest: ${{ secrets.SSH_PATH }}/nightserv/target/release/nightserv
-        cmd: screen -S hacknight -d -m "${{ secrets.SSH_PATH }}/testbin"
     - name: Cache
       uses: actions/cache@v3.3.2
       with:
@@ -74,7 +54,7 @@ jobs:
         private_key: ${{ secrets.SSH_PRIVATE_KEY }}
         host: ${{ secrets.SSH_HOST }}
         user: ${{ secrets.SSH_USER }}
-        file: nightserv/target/release/nightserv
+        file: nightserv/target/x86_64-unknown-linux-musl/release/nightserv
         dest: ${{ secrets.SSH_PATH }}/nightserv/target/release/nightserv
         cmd: |
           cd ${{ secrets.SSH_PATH }}/nightserv
