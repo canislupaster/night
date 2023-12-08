@@ -27,7 +27,7 @@ jobs:
         npm install
         npm run build
     - name: Deploy
-      uses: ./runssh
+      uses: ./.github/runssh
       with:
         private_key: ${{ secrets.SSH_PRIVATE_KEY }}
         host: ${{ secrets.SSH_HOST }}

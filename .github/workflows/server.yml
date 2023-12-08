@@ -33,7 +33,7 @@ jobs:
         cargo build --release --verbose
     # from https://stackoverflow.com/questions/68412832/github-actions-copy-files-to-vps?rq=3
     - name: Deploy (quit server)
-      uses: ./runssh
+      uses: ./.github/runssh
       with:
         private_key: ${{ secrets.SSH_PRIVATE_KEY }}
         host: ${{ secrets.SSH_HOST }}
@@ -43,7 +43,7 @@ jobs:
           mkdir -p /target/release
           screen -S hacknight -X quit; rm ./target/release/server
     - name: Deploy (start server)
-      uses: ./runssh
+      uses: ./.github/runssh
       with:
         private_key: ${{ secrets.SSH_PRIVATE_KEY }}
         host: ${{ secrets.SSH_HOST }}
