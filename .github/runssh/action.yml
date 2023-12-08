@@ -1,0 +1,32 @@
+name: runssh
+description: Run command thru SSH on server
+inputs:
+  cmd:
+    description: 'command'
+  file:
+    description: 'file input'
+  dest:
+    description: 'file destination'
+  private_key:
+    required: true
+  host:
+    required: true
+  user:
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - id: hosts and keys
+      run: |
+        install -m 600 -D /dev/null ~/.ssh/id_rsa
+        echo "${{ inputs.private_key }}" > ~/.ssh/id_rsa
+        ssh-keyscan -H ${{ inputs.host }} > ~/.ssh/known_hosts
+      shell: bash
+    - id: transfer file
+      if: ${{ inputs.file!='' && inputs.dest!='' }}
+      run: scp -r ${{ inputs.file }} ${{ inputs.user }}@${{ inputs.host }}:${{ inputs.dest }}
+      shell: bash
+    - id: run command
+      if: ${{ inputs.cmd!='' }}
+      run: ssh ${{ inputs.user }}@${{ inputs.host }} <<< "${{ inputs.cmd }}"
+      shell: bash

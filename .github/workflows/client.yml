@@ -1,0 +1,36 @@
+name: Rust
+
+on:
+  push:
+    branches: [ "main" ]
+    paths: ["client/**"]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        filter: "client/**"
+    - name: Cache
+      uses: actions/cache@v3.3.2
+      with:
+        path: client/node_modules/
+        key: ${{ runner.os }}-${{ hashFiles('client/package-lock.json') }}-cache
+    - name: Build
+      run: |
+        cd client
+        npm install
+        npm run build
+    - name: Deploy
+      uses: ./runssh
+      with:
+        private_key: ${{ secrets.SSH_PRIVATE_KEY }}
+        host: ${{ secrets.SSH_HOST }}
+        user: ${{ secrets.SSH_USER }}
+        file: client/dist/
+        dest: ${{ secrets.SSH_PATH }}/client/dist/

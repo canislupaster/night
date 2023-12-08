@@ -1,0 +1,53 @@
+name: Rust
+
+on:
+  push:
+    branches: [ "main" ]
+    paths: ["nightserv/**"]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        filter: "nightserv/**"
+    - name: Cache
+      uses: actions/cache@v3.3.2
+      with:
+        path: |
+          ~/.cargo/bin/
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+          nightserv/target/
+        # An explicit key for restoring and saving the cache
+        key: ${{ runner.os }}-${{ hashFiles('nightserv/Cargo.lock') }}-cache
+    - name: Build
+      run: |
+        cd nightserv
+        cargo build --release --verbose
+    # from https://stackoverflow.com/questions/68412832/github-actions-copy-files-to-vps?rq=3
+    - name: Deploy (quit server)
+      uses: ./runssh
+      with:
+        private_key: ${{ secrets.SSH_PRIVATE_KEY }}
+        host: ${{ secrets.SSH_HOST }}
+        user: ${{ secrets.SSH_USER }}
+        cmd: |
+          cd ${{ secrets.SSH_PATH }}/nightserv
+          mkdir -p /target/release
+          screen -S hacknight -X quit; rm ./target/release/server
+    - name: Deploy (start server)
+      uses: ./runssh
+      with:
+        private_key: ${{ secrets.SSH_PRIVATE_KEY }}
+        host: ${{ secrets.SSH_HOST }}
+        user: ${{ secrets.SSH_USER }}
+        file: nightserv/target/release/nightserv
+        dest: ${{ secrets.SSH_PATH }}/nightserv/target/release/nightserv
+        cmd: screen -S hacknight -d -m "${{ secrets.SSH_PATH }}/nightserv/target/release/nightserv"
