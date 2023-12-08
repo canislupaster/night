@@ -53,7 +53,9 @@ jobs:
     - name: Build
       run: |
         cd nightserv
-        cargo build --release --verbose
+        sudo apt-get install musl-tools
+        rustup target add x86_64-unknown-linux-musl
+        cargo build --release --verbose --target x86_64-unknown-linux-musl
     # from https://stackoverflow.com/questions/68412832/github-actions-copy-files-to-vps?rq=3
     - name: Deploy (quit server)
       uses: ./.github/runssh
@@ -74,4 +76,6 @@ jobs:
         user: ${{ secrets.SSH_USER }}
         file: nightserv/target/release/nightserv
         dest: ${{ secrets.SSH_PATH }}/nightserv/target/release/nightserv
-        cmd: screen -S hacknight -d -m "${{ secrets.SSH_PATH }}/nightserv/target/release/nightserv"
+        cmd: |
+          cd ${{ secrets.SSH_PATH }}/nightserv
+          screen -S hacknight -d -m ./target/release/nightserv
