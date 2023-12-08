@@ -16,17 +16,17 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - id: hosts and keys
+    - name: Set host and key
       run: |
         install -m 600 -D /dev/null ~/.ssh/id_rsa
         echo "${{ inputs.private_key }}" > ~/.ssh/id_rsa
         ssh-keyscan -H ${{ inputs.host }} > ~/.ssh/known_hosts
       shell: bash
-    - id: transfer file
+    - name: Transfer file
       if: ${{ inputs.file!='' && inputs.dest!='' }}
       run: scp -r ${{ inputs.file }} ${{ inputs.user }}@${{ inputs.host }}:${{ inputs.dest }}
       shell: bash
-    - id: run command
+    - name: Run command
       if: ${{ inputs.cmd!='' }}
       run: ssh ${{ inputs.user }}@${{ inputs.host }} <<< "${{ inputs.cmd }}"
       shell: bash
