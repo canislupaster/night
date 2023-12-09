@@ -36,4 +36,4 @@ jobs:
         host: ${{ secrets.SSH_HOST }}
         user: ${{ secrets.SSH_USER }}
         file: client/dist/
-        dest: ${{ secrets.SSH_PATH }}/client/dist/
+        dest: ${{ secrets.SSH_PATH }}/client/

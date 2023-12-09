@@ -18,7 +18,7 @@ export function ProjectCard({
 	time
 }: PostData) {
 	return <div
-		className="rounded-2xl bg-amber-600/25 w-full p-4 text-white mb-4 flex flex-col space-between"
+		className="rounded-2xl bg-amber-600/20 w-full p-4 text-white mb-4 flex flex-col space-between"
 		style={{ border: `8px solid ${color}` }}
 	>
 		<div className="flex flex-row items-center gap-x-2">

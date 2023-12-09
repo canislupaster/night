@@ -78,12 +78,13 @@ enum ServerMsg<'a> {
 	BellRung {next_ringable: usize},
 	StopRinging,
 	Posted {post: &'a Post},
+	Fish {fish: Option<&'a String>},
 	#[serde(rename_all = "camelCase")]
 	Init {
 		id: usize,
 		ringing: bool,
 		next_ringable: usize,
-		fish: &'a str,
+		fish: Option<&'a String>,
 		players: Vec<ClientPlayer<'a>>,
 		recent_msgs: &'a VecDeque<Post>,
 		grid: &'a Grid
@@ -119,7 +120,7 @@ struct State {
 	grid: Box<[Box<[Cell]>]>,
 	last_rung: Option<Instant>,
 	ringing: bool,
-	fish: String
+	fish: Option<String>
 }
 
 impl State {
@@ -241,7 +242,7 @@ impl EventHandler for Handler {
 		let mut lock = self.state.lock().await;
 		let msgs = self.channel_id.messages(&ctx, |m|
 			m.limit(lock.max_rec_msg as u64)).await.expect("could not get messages");
-		let posts = join_all(msgs.into_iter().map(|m| msg_to_post(m, ctx.clone()))).await;
+		let posts = join_all(msgs.into_iter().rev().map(|m| msg_to_post(m, ctx.clone()))).await;
 		lock.recent_msgs = VecDeque::from(posts);
 	}
 
@@ -251,9 +252,8 @@ impl EventHandler for Handler {
 		let mut lock = self.state.lock().await;
 
 		if msg.content.trim().to_lowercase()=="fish of the day" {
-			if let Some(attach) = msg_images(&msg).next() {
-				lock.fish = attach.to_owned();
-			}
+			lock.fish = msg_images(&msg).next().cloned();
+			lock.broadcast(&ServerMsg::Fish {fish: lock.fish.as_ref()}).await;
 		} else {
 			let p = msg_to_post(msg, ctx.clone()).await;
 			lock.broadcast(&ServerMsg::Posted {post: &p}).await;
@@ -506,7 +506,7 @@ async fn main() -> std::io::Result<()> {
 		stop_ringing: Duration::from_secs(env_num("STOP_RINGING", 30) as u64),
 		round_timer: Duration::from_millis(env_num("ROUND_TIMER", 100) as u64),
 		round_moves: HashMap::new(),
-		fish: std::env::var("FISH").expect("no fish"),
+		fish: std::env::var("FISH").ok(),
 
 		num_conn: 0, conns: HashMap::new(),
 		last_rung: None,
@@ -543,7 +543,7 @@ async fn main() -> std::io::Result<()> {
 					},
 					recent_msgs: &lock.recent_msgs,
 					grid: &lock.grid,
-					fish: &lock.fish,
+					fish: lock.fish.as_ref(),
 					ringing: lock.ringing,
 					players: lock.client_players()
 				}).await;

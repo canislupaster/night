@@ -107,7 +107,7 @@ const Home = () => {
 
         <Time />
 
-        <div className="flex flex-row gap-x-20 items-start justify-evenly w-full overflow-y-hidden mt-3" >
+        <div className="flex flex-row gap-x-20 items-start justify-evenly w-full overflow-y-hidden" >
           {/* <NowPlaying fishData={ctx.fish} songData={songData} /> */}
 
           <div>
@@ -115,7 +115,7 @@ const Home = () => {
           </div>
 
           <div className="max-w-md h-full overflow-y-auto" >
-            <Posts posts={ctx.recentMsgs.slice(-10)} />
+            <Posts fish={ctx.fish} posts={ctx.recentMsgs.slice(-10)} />
           </div>
         </div>
       </div>

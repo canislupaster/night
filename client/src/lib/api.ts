@@ -36,6 +36,7 @@ export type ServerMsg =
   | {type: "bellRung", nextRingable: number}
   | {type: "stopRinging"}
   | {type: "posted", post: RawPost & {time: string}}
+  | {type: "fish", fish?: string}
   | {type: "init", nextRingable: number, ringing: boolean, fish: string|null, recentMsgs: Post[], grid: Cell[][], players: Player[], id: number}
   | {type: "err", msg: string};
 
@@ -171,6 +172,7 @@ export function connect(setCtx: (f: (x: ServerContextData) => ServerContextData)
               state: "connected",
               data: {
                 ...msg,
+                recentMsgs: msg.recentMsgs.map((p) => ({...p, time: new Date(p.time)})),
                 fish: msg.fish===null ? undefined : msg.fish,
                 players: Object.fromEntries(msg.players.map((x) => [x.id, x])),
                 nextRingable: new Date(Date.now() + msg.nextRingable),
@@ -206,6 +208,9 @@ export function connect(setCtx: (f: (x: ServerContextData) => ServerContextData)
           case "gameOver":
             setData((x) => ({...x, players: Object.fromEntries(msg.players.map((x) => [x.id, x])), grid: msg.grid}));
 
+            break;
+          case "fish":
+            setData((x) => ({...x, fish: msg.fish===null ? undefined : msg.fish}));
             break;
           case "posted":
             const p: Post = {...msg.post, time: new Date(msg.post.time)};

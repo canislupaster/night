@@ -8,13 +8,14 @@ const Posts = ({ posts, fish }: { posts: Post[], fish?: string }) => {
   const colors = useTime().lightningTimeColors;
 
   return (
-    <div className="pr-8 pl-11 w-full">
+    <div className="pr-2 pl-3 w-full flex flex-col items-center">
       {fish===undefined ? <></> : 
-        <div className="flex flex-col mt-4 ml-8 w-10/12 items-center">
-          <img src={fish} className="mt-2 max-h-50 rounded-lg" />
-          <h1 className="text-3xl mt-2 font-bold font-mono">FISH OF THE DAY</h1>
-          <div className="bg-gray-300 self-stretch border-0 rounded w-0.5 mx-4" ></div>
-        </div>}
+        <><div className="flex flex-col items-center">
+          <img src={fish} className="mt-2 max-h-40 rounded-lg" />
+          <h1 className="text-2xl mt-2 font-bold font-mono">FISH OF THE DAY</h1>
+        </div>
+        <div className="bg-gray-300 self-stretch border-0 rounded h-0.5 my-4" ></div></>}
+
 
       {[...posts].reverse().map((post: Post, i: number) => (
         <ProjectCard
