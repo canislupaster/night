@@ -34,7 +34,7 @@ export function Game() {
     const cls = `border border-2 ${i<top.length ? top[i] : rest} p-3`;
 
     return <div className="inline-flex drop-shadow-xl mx-2 items-center rounded shadow-lg text-white" style={{backgroundColor: p[1].color}} >
-      <div className={`${cls} border-r-0 rounded-s`} ><span className=" mix-blend-difference" >{ p[1].name }</span></div>
+      <div className={`${cls} grow border-r-0 rounded-s`} ><span className=" mix-blend-difference" >{ p[1].name }</span></div>
       <div className={`${cls} rounded-e`} >{ p[1].points.toPrecision(2) }</div>
     </div>
   });

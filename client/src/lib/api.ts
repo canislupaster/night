@@ -36,7 +36,7 @@ export type ServerMsg =
   | {type: "bellRung", nextRingable: number}
   | {type: "stopRinging"}
   | {type: "posted", post: RawPost & {time: string}}
-  | {type: "init", nextRingable: number, ringing: boolean, fish: string, recentMsgs: Post[], grid: Cell[][], players: Player[], id: number}
+  | {type: "init", nextRingable: number, ringing: boolean, fish: string|null, recentMsgs: Post[], grid: Cell[][], players: Player[], id: number}
   | {type: "err", msg: string};
 
 export type ServerEvent = "roundOver" | "bellRung";
@@ -46,7 +46,7 @@ export type ServerConnectedCtx = {
   nextRingable: Date,
   recentMsgs: Post[],
   players: {[x: number]: Player},
-  fish: string,
+  fish?: string,
   error?: string,
   send: (msg: ClientMsg) => void,
   on: (evt: ServerEvent, cb: () => void) => void,
@@ -61,7 +61,7 @@ export function defaultConnectedCtx(): ServerConnectedCtx {
     nextRingable: new Date(),
     recentMsgs: [],
     players: {},
-    fish: "",
+    fish: undefined,
     error: "Not connected. What the hell!",
     send: (msg) => {},
     ringing: false,
@@ -171,6 +171,7 @@ export function connect(setCtx: (f: (x: ServerContextData) => ServerContextData)
               state: "connected",
               data: {
                 ...msg,
+                fish: msg.fish===null ? undefined : msg.fish,
                 players: Object.fromEntries(msg.players.map((x) => [x.id, x])),
                 nextRingable: new Date(Date.now() + msg.nextRingable),
                 error: undefined,

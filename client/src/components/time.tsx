@@ -4,13 +4,14 @@ import phLogo from '../assets/ph-logo-cropped.png'
 import { ComponentChildren, createContext } from 'preact';
 
 import hsvrgb from 'hsv-rgb';
+import { DayMS, TimezoneOffset, timeString, toLocal } from '../lib/util';
 
 type TimeContext = {normalTime: string, lightningTimeParts: string[], lightningTimeColors: string[]};
 
 const TimeContext = createContext<TimeContext>({normalTime: "", lightningTimeParts: [], lightningTimeColors: []});
 
 export function TimeContextProvider({children}: {children: ComponentChildren}) {
-  const DAY_MS = 3600*24*1000, DT = DAY_MS/65536;
+  const DT = DayMS/65536;
 
   let [time, setTime] = useState<TimeContext>({
     normalTime: "", lightningTimeParts: new Array(4), lightningTimeColors: new Array(4)
@@ -19,10 +20,8 @@ export function TimeContextProvider({children}: {children: ComponentChildren}) {
   useEffect(() => {
     let cur_timeout;
 
-    let timezone = new Date().getTimezoneOffset();
-
     const cb = () => {
-      let r = (Date.now() - timezone*60*1000)%DAY_MS;
+      let r = toLocal(Date.now());
       let v = Math.floor(r/DT);
 
       let p: number[] = new Array(4), c=new Array(3);
@@ -32,10 +31,6 @@ export function TimeContextProvider({children}: {children: ComponentChildren}) {
         v=(v-p[i])/16;
       }
 
-      let hrs = Math.floor(r/(3600*1000));
-      let mm = Math.floor((r%(1000*3600))/(60*1000)).toString();
-      while (mm.length<2) mm=`0${mm}`;
-
       let x = (r,g,b): string => `rgb(${r}, ${g}, ${b})`;
 
       setTime({
@@ -44,7 +39,7 @@ export function TimeContextProvider({children}: {children: ComponentChildren}) {
           x(c[0], 161, 0), x(c[1], 50, 214), x(246, 133, c[2]),
           x.apply(null, hsvrgb(p[3]*60/16, 100, 100))
         ],
-        normalTime: `${(hrs%12 == 0) ? 12 : hrs%12}:${mm} ${hrs>=12 ? "pm" : "am"}`
+        normalTime: timeString(r)
       });
 
       cur_timeout = setTimeout(cb, DT-(r%DT));
