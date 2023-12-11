@@ -36,7 +36,7 @@ export function TimeContextProvider({children}: {children: ComponentChildren}) {
       setTime({
         lightningTimeParts: p.map((x) => x.toString(16)),
         lightningTimeColors: [
-          x(c[0], 161, 0), x(c[1], 50, 214), x(246, 133, c[2]),
+          x(c[0], 161, 0), x(50, c[1], 214), x(246, 133, c[2]),
           x.apply(null, hsvrgb(p[3]*60/16, 100, 100))
         ],
         normalTime: timeString(r)
